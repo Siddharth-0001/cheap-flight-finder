@@ -1,17 +1,29 @@
 # ✈️ Cheap Flight Finder
 
-A personal flight price tracker that monitors one-way flight prices via the Amadeus API and sends WhatsApp alerts via Twilio when prices drop below your set threshold. Google Sheets (via Sheety) serves as the database.
+A personal flight price tracker built with **Python & Flask**. It monitors one-way flight prices via the **SerpApi Google Flights API** and sends **Gmail email alerts** when prices drop below your set threshold. **Google Sheets** (via Sheety API) is used as the database.
 
 ---
 
 ## Features
 
-- 🎯 Set price thresholds for any one-way route
-- 🔍 Instantly check current cheapest price before saving
+- 🎯 Set INR price thresholds for any one-way route
+- 🔍 Instantly check the current cheapest price before saving
 - 🔄 Auto-checks all tracked routes every hour in the background
-- 📲 WhatsApp alert when a price drops below threshold
+- 📧 Gmail email alert when a price drops below your threshold
 - 📊 Google Sheets as the database (via Sheety API)
-- 🌐 Clean, modern web UI
+- 🌐 Clean, modern web UI built with HTML, CSS & JavaScript
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Backend | Python, Flask |
+| Flight Prices | SerpApi (Google Flights) |
+| Database | Google Sheets + Sheety API |
+| Notifications | Gmail (SMTP) |
+| Scheduler | APScheduler (hourly price checks) |
 
 ---
 
@@ -24,7 +36,7 @@ Create a Google Sheet with a tab named **`flights`** and these exact column head
 | id | origin | destination | threshold | date | lastPrice |
 |----|--------|-------------|-----------|------|-----------|
 
-Then connect it to [Sheety](https://sheety.co) and copy the API endpoint.
+Then connect it to [Sheety](https://sheety.co), enable **Bearer Token** authentication, and copy the API endpoint.
 
 ### 2. Install dependencies
 
@@ -37,22 +49,27 @@ pip install -r requirements.txt
 Copy `.env.example` to `.env` and fill in your credentials:
 
 ```bash
-copy .env.example .env
+cp .env.example .env
 ```
 
 ```env
-AMADEUS_API_KEY=your_amadeus_api_key
-AMADEUS_API_SECRET=your_amadeus_api_secret
+# SerpApi (Google Flights)
+SERPAPI_API_KEY=your_serpapi_api_key
 
-TWILIO_ACCOUNT_SID=your_twilio_account_sid
-TWILIO_AUTH_TOKEN=your_twilio_auth_token
-TWILIO_WHATSAPP_FROM=whatsapp:+14155238886   # Twilio sandbox number
-TWILIO_WHATSAPP_TO=whatsapp:+YOUR_NUMBER     # Your WhatsApp number
+# Sheety API
+SHEETY_ENDPOINT=https://api.sheety.co/YOUR_USERNAME/cheapFlightFinder/flights
+SHEETY_AUTH_TOKEN=your_sheety_bearer_token
 
-SHEETY_ENDPOINT=https://api.sheety.co/YOUR_USERNAME/flightTracker/flights
+# Gmail Notifications
+GMAIL_USER=your_gmail@gmail.com
+GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
+NOTIFY_EMAIL=your_gmail@gmail.com
 
+# Flask
 FLASK_SECRET_KEY=any_random_string
 ```
+
+> **Gmail App Password:** Go to [myaccount.google.com/security](https://myaccount.google.com/security) → enable 2-Step Verification → search "App passwords" → create one for Mail → paste the 16-character password.
 
 ### 4. Run the app
 
@@ -66,11 +83,22 @@ Open [http://localhost:5000](http://localhost:5000) in your browser.
 
 ## How it works
 
-1. Add a flight watch: enter origin IATA code, destination IATA code, travel date, and price threshold
+1. Add a flight watch — enter origin IATA code, destination IATA code, travel date, and INR price threshold
 2. The app saves it to your Google Sheet via Sheety
-3. Every hour, the background scheduler checks all tracked routes via Amadeus
-4. If any price is below the threshold, a WhatsApp message is sent via Twilio
-5. Use "Check All Now" for an immediate manual check
+3. Every hour, APScheduler checks all tracked routes via SerpApi Google Flights
+4. If any price is below the threshold, an email alert is sent via Gmail
+5. Use **"Check All Now"** for an immediate manual check
+6. Use **"Check Current Price"** to preview the live price before saving
+
+---
+
+## Getting API Keys
+
+| Service | Where to get it |
+|---------|----------------|
+| **SerpApi** | Sign up free at [serpapi.com](https://serpapi.com) — 100 searches/month free, no credit card |
+| **Sheety** | Connect your Google Sheet at [sheety.co](https://sheety.co) |
+| **Gmail App Password** | [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) |
 
 ---
 
@@ -78,12 +106,12 @@ Open [http://localhost:5000](http://localhost:5000) in your browser.
 
 | City | Code |
 |------|------|
-| New York (JFK) | JFK |
-| London Heathrow | LHR |
-| Dubai | DXB |
-| Paris CDG | CDG |
-| Los Angeles | LAX |
+| Delhi | DEL |
 | Mumbai | BOM |
+| Bangalore | BLR |
+| Dubai | DXB |
+| London Heathrow | LHR |
+| New York JFK | JFK |
 
 ---
 
@@ -91,15 +119,18 @@ Open [http://localhost:5000](http://localhost:5000) in your browser.
 
 ```
 cheap-flight-finder/
-├── app.py                    # Flask app + scheduler
+├── app.py                        # Flask app + APScheduler (hourly checks)
 ├── requirements.txt
-├── .env.example
+├── .env.example                  # Template for credentials
+├── .gitignore
+├── README.md
+├── check.py                      # Utility script to verify all services
 ├── services/
-│   ├── flight_service.py     # Amadeus API integration
-│   ├── sheety_service.py     # Sheety / Google Sheets integration
-│   └── notification_service.py  # Twilio WhatsApp alerts
+│   ├── flight_service.py         # SerpApi Google Flights integration
+│   ├── sheety_service.py         # Sheety / Google Sheets CRUD
+│   └── notification_service.py  # Gmail email alerts
 ├── templates/
-│   └── index.html            # Main UI
+│   └── index.html                # Main UI
 └── static/
     ├── css/style.css
     └── js/app.js
